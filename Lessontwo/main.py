@@ -4,6 +4,8 @@ from kivy.uix.button import Button
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.textinput import TextInput
+from kivy.clock import Clock
+from kivy.properties import BooleanProperty
 from instructions import *
 from ruffier import test
 
@@ -17,6 +19,24 @@ def check_int(in_, int_):
         return int_
     except:
         return False
+
+
+class Seconds(Label):
+    done = BooleanProperty()
+    def __init__(self, seconds, **kwargs):
+        self.done = False
+        self.seconds = seconds
+        self.current = 0
+        sec_text = "Прошло секунд: " + str(self.current)
+        super().__init__(text=sec_text)
+    def todo(self, dt):
+        self.current += 1
+        self.text = "Прошло секунд: " + str(self.current)
+        if self.current >= self.seconds:
+            self.done = True
+            return False
+    def start(self):
+        Clock.schedule_interval(self.todo, 1)
 
 
 class InstScr(Screen):
@@ -52,17 +72,28 @@ class InstScr(Screen):
 class PulseOneScr(Screen):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.button = Button(text='Продолжить', size_hint=(0.3, 0.2), pos_hint={'center_x' : 0.5}, background_color='green')
+        self.timer = Seconds(15)
+        self.timer.bind(done=self.timeout)
         self.in_p1 = TextInput(text='0', multiline=False)
-        self.button.on_press = self.next
+        self.in_p1.set_disabled(True)
+        self.button = Button(text='Начать', size_hint=(0.3, 0.2), pos_hint={'center_x' : 0.5}, background_color='green')
+        self.button.on_press = self.start_timer
         vl = BoxLayout(orientation='vertical')
         hl = BoxLayout(orientation='horizontal', size_hint=(0.8, None), height=30)
         hl.add_widget(Label(text='Введите результат:'))
         hl.add_widget(self.in_p1)
         vl.add_widget(Label(text=txt_test1))
+        vl.add_widget(self.timer)
         vl.add_widget(hl)
         vl.add_widget(self.button)
         self.add_widget(vl)
+    def start_timer(self):
+        self.timer.start()
+        self.button.set_disabled(True)
+    def timeout(self):
+        self.in_p1.set_disabled(False)
+        self.button.set_disabled(False)
+        self.button.text = "Продолжить"
     def next(self):
         global p1
         p1 = check_int(self.in_p1, p1)
